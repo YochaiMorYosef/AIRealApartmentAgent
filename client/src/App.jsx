@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import ChatPanel from "./components/ChatPanel";
 
 // The Apify yad2 scraper can return slightly different field names,
 // so we look for a few common variants for each piece of data.
@@ -15,7 +16,6 @@ function normalizeApartment(item, index) {
   const image = pick(item, ["image", "coverImage", "imageUrl", "mainImage"]) ||
     (Array.isArray(item.images) && item.images[0]) ||
     null;
-
   return {
     id: item.id || item.token || index,
     image,
@@ -65,6 +65,15 @@ function App() {
   const [error, setError] = useState(null);
   const [cityFilter, setCityFilter] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
+  const [messages, setMessages] = useState([
+    {
+      role: "assistant",
+      text: "שלום 👋\nאיזו דירה אתה מחפש?"
+    }
+  ]);
+
+  const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     fetch("/api/apartments")
@@ -93,12 +102,55 @@ function App() {
     });
   }, [apartments, cityFilter, maxPrice]);
 
+
+  async function sendMessage() {
+    if (!input.trim())
+      return;
+
+    const userMessage = {
+      role: "user",
+      text: input
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setSending(true);
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        message: input
+      })
+    });
+    const data = await response.json();
+    if (data.apartments) {
+      setApartments(
+        data.apartments.map(normalizeApartment)
+      );
+    }
+
+    setMessages(prev => [
+      ...prev,
+      {
+        role: "assistant",
+        text: data.reply
+      }
+    ]);
+
+    setInput("");
+    setSending(false);
+  }
+
   return (
     <div className="app">
-      <aside className="chat-panel">
-        <h2>סוכן דירות</h2>
-        <div className="chat-bubble">איזו דירה אתה מחפש?</div>
-      </aside>
+      <ChatPanel
+        messages={messages}
+        input={input}
+        sending={sending}
+        onInputChange={setInput}
+        onSend={sendMessage}
+      />
 
       <main className="dashboard">
         <div className="filters">

@@ -1,58 +1,11 @@
-// require("dotenv").config();
-// const express = require("express");
-// const cors = require("cors");
-
-// const app = express();
-// const PORT = process.env.PORT || 5000;
-
-// app.use(cors());
-
-// // Fetches apartment listings from Apify and returns them to the frontend.
-// // The frontend never talks to Apify directly - only this server does.
-// app.get("/api/apartments", async (req, res) => {
-//   try {
-//     const token = process.env.APIFY_TOKEN;
-//     console.log("token: ", token);
-    
-//     const body = {
-//         city: req.query.city || "Tel Aviv",
-//         maxItems: 24,
-//         enrichListings: true,
-//         requireBalcony: false,
-//         requireElevator: false,
-//         requireParking: false,
-//         requireSecureRoom: false
-//     };
-//     const url = ` https://api.apify.com/v2/acts/swerve~yad2-scraper/run-sync-get-dataset-items?token=${token}`;
-
-//     // const apifyResponse = await fetch(url);
-//     const apifyResponse = await fetch(url,{
-//         method:"POST",
-//         headers:{
-//             "Content-Type":"application/json"
-//         },
-//         body:JSON.stringify(body)
-//     });
-
-//     console.log(apifyResponse);
-    
-//     if (!apifyResponse.ok) {
-//       throw new Error(`Apify request failed with status ${apifyResponse.status}`);
-//     }
-
-//     const apartments = await apifyResponse.json();
-//     res.json(apartments);
-//   } catch (error) {
-//     console.error("Failed to fetch apartments:", error.message);
-//     res.status(500).json({ error: "Failed to fetch apartments" });
-//   }
-// });
-
-// app.listen(PORT, () => {
-//   console.log(`Server running on http://localhost:${PORT}`);
-// });
 
 require("dotenv").config();
+const { GoogleGenAI } = require("@google/genai");
+
+const geminiai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
+});
+console.log(process.env.GEMINI_API_KEY ? "✅ Gemini API Key Loaded" : "❌ Missing API Key");
 const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
@@ -61,7 +14,7 @@ const { AsyncLocalStorage } = require("async_hooks");
 const updateData = require("./updateData");
 
 const app = express();
-
+app.use(express.json());
 app.use(cors());
 
 app.get("/api/apartments", (req, res) => {
@@ -104,6 +57,222 @@ app.post("/api/update", async (req, res) => {
     });
   }
 });
+
+const searchApartmentsTool = {
+  name: "searchApartments",
+  description: "Search apartments for sale or rent. \
+                If the user says: \
+                לקנייה \
+                למכירה \
+                Return: \
+                dealType = sale  \
+                If the user says:  \
+                להשכרה  \
+                לשכור  \
+                \
+                Return: \
+                dealType = rent \
+                \
+                If the user doesn't specify, ask the user whether they are looking to buy or rent instead of assuming.",
+  
+  parameters: {
+    type: "OBJECT",
+    properties: {
+
+      city: {
+        type: "STRING",
+        description: "City name in Hebrew exactly as users say it. Example: תל אביב, ירושלים, חיפה."
+      },
+
+      neighbourhood: {
+        type: "STRING",
+        description: "Neighborhood"
+      },
+
+      dealType: {
+        type: "STRING",
+        enum: ["sale", "rent"],
+        description: "Apartment for sale or rent"
+      },
+
+      minPrice: {
+        type: "NUMBER"
+      },
+
+      maxPrice: {
+        type: "NUMBER"
+      },
+
+      minRooms: {
+        type: "NUMBER"
+      },
+
+      maxRooms: {
+        type: "NUMBER"
+      },
+
+      hasParking: {
+        type: "BOOLEAN"
+      },
+
+      hasBalcony: {
+        type: "BOOLEAN"
+      },
+
+      hasElevator: {
+        type: "BOOLEAN"
+      },
+
+      hasSecureRoom: {
+        type: "BOOLEAN"
+      },
+
+      minArea: {
+        type: "NUMBER"
+      },
+
+      maxArea: {
+        type: "NUMBER"
+      }
+
+    }
+  }
+};
+
+app.post("/api/chat", async (req, res) => {
+  try {
+    const { message } = req.body;
+    console.log("Calling Gemini...");
+    const response = await geminiai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: message,
+      config: {
+
+        tools: [
+          {
+            functionDeclarations: [
+              searchApartmentsTool
+            ]
+          }
+        ]
+
+      }
+    });
+    console.log("Gemini returned");
+    const part = response.candidates[0].content.parts[0];
+
+    if (part.functionCall) {
+        const args = part.functionCall.args;
+        const apartments = searchApartments(args);
+        console.log(JSON.stringify(response, null, 2));
+        
+        let reply = "";
+        if (apartments.length === 0) {
+
+            reply = "לא מצאתי דירות שמתאימות לבקשה שלך.";
+
+        } else {
+
+            const first = apartments[0];
+
+            reply =
+                `מצאתי עבורך ${apartments.length} דירות.\n` +
+                `הדירה הראשונה נמצאת ב${first.cityHebrew || first.city} ` +
+                `במחיר ₪${first.price.toLocaleString()}.`;
+
+        }
+
+        return res.json({
+            reply,
+            apartments
+        });
+    }
+
+    // console.log(response.text);
+    // console.log(JSON.stringify(response, null, 2));
+    return res.json({
+      reply: response.text,
+      apartments: []
+    });
+
+  } catch (err) {
+    console.error(err);
+
+    res.status(500).json({
+      error: err.message,
+    });
+  }
+});
+
+function searchApartments(filters) {
+
+    const apartments = JSON.parse(
+        fs.readFileSync("./apartments.json", "utf8")
+    );
+    console.log("Filters:", filters);
+    return apartments.filter((apt) => {
+
+        // City (Hebrew + English)
+        if (filters.city) {
+
+            const city = filters.city.trim().toLowerCase();
+
+            const cityMatch =
+                apt.city?.toLowerCase() === city ||
+                apt.cityHebrew?.toLowerCase().includes(city);
+
+            if (!cityMatch)
+                return false;
+        }
+
+        // Deal Type
+        if (filters.dealType) {
+            if (apt.dealType !== filters.dealType)
+                return false;
+        }
+
+        // Rooms
+        if (filters.minRooms) {
+            if (apt.rooms < filters.minRooms)
+                return false;
+        }
+
+        if (filters.maxRooms) {
+            if (apt.rooms > filters.maxRooms)
+                return false;
+        }
+
+        // Price
+        if (filters.minPrice) {
+            if (apt.price < filters.minPrice)
+                return false;
+        }
+
+        if (filters.maxPrice) {
+            if (apt.price > filters.maxPrice)
+                return false;
+        }
+
+        // Parking
+        if (filters.hasParking && !apt.hasParking)
+            return false;
+
+        // Balcony
+        if (filters.hasBalcony && !apt.hasBalcony)
+            return false;
+
+        // Elevator
+        if (filters.hasElevator && !apt.hasElevator)
+            return false;
+
+        // Safe Room
+        if (filters.hasSecureRoom && !apt.hasSecureRoom)
+            return false;
+
+        return true;
+    });
+
+}
 
 app.listen(5000,()=>{
     console.log("Server running...");
