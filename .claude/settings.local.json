@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p /Users/a1/Desktop/Yochai/Projects/AIRealApartmentAgent/server /Users/a1/Desktop/Yochai/Projects/AIRealApartmentAgent/client/src)"
+    ],
+    "additionalDirectories": [
+      "/Users/a1/Desktop/Yochai/Projects/AIRealApartmentAgent"
+    ]
+  }
+}
