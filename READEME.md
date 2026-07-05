@@ -29,8 +29,10 @@ Instead of manually selecting filters, users can simply describe what they are l
 Examples:
 
 - "מצא לי דירת 4 חדרים בתל אביב עד 10,000 ש״ח"
-- "אני מחפש דירה להשכרה באשדוד עם חניה"
-- "תראה לי דירות להשכרה בתל אביב עם מעלית"
+- "מצא לי דירה להשכרה באשדוד עד 8,000 ש״ח"
+- "אני מחפש דירת 4 חדרים באשדוד"
+- "תראה לי דירות להשכרה באשדוד עם חניה"
+
 
 The AI agent uses **Google Gemini Function Calling** to:
 
@@ -153,7 +155,11 @@ npm run dev
 
 # Future Improvements
 
-With more time I would:
+One thing you'd do differently with more time:
+
+- Improves the agent to respond to a wider set of requests. > The biggest one.
+
+And with more more time:
 
 - Automatically refresh apartment data twice a day. (using updateData.js script)
 - Add a detailed apartment popup when card is clicked by the user.
