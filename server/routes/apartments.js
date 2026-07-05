@@ -27,7 +27,7 @@ router.get("/apartments", (req, res) => {
 });
 
 // POST Route for updating data apartments
-router.post("/api/update", async (req, res) => {
+router.post("/update", async (req, res) => {
     console.log(">>> Route: api/update called <<<");
     try {
         const count = await updateData();
