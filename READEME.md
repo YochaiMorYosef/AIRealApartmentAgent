@@ -20,6 +20,12 @@ The apartment data is stored locally in a JSON file, allowing the frontend to pr
 
 Instead of manually selecting filters like on Yad2, users simply describe the apartment they are looking for in natural Hebrew.
 
+### Why this AI feature?
+
+I chose this feature because searching for an apartment is naturally conversational.
+
+Instead of manually selecting filters, users can simply describe what they are looking for in natural language. The AI understands the request, extracts the relevant search criteria, and returns the most suitable apartments, creating a faster and more intuitive search experience.
+
 Examples:
 
 - "מצא לי דירת 4 חדרים בתל אביב עד 10,000 ש״ח"
