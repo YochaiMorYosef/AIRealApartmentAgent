@@ -78,7 +78,8 @@ Examples:
 ## Clone the repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/YochaiMorYosef/AIRealApartmentAgent.git
+cd AIRealApartmentAgent
 ```
 
 ---
