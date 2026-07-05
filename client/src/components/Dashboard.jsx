@@ -12,6 +12,11 @@ function Dashboard({
 }) {
   return (
     <main className="dashboard">
+      <div className="dashboard-header">
+        <h1>לוח דירות</h1>
+        <span className="dashboard-count">{filteredApartments.length} דירות</span>
+      </div>
+
       <div className="filters">
         <select value={cityFilter} onChange={(e) => onCityFilterChange(e.target.value)}>
           <option value="">כל הערים</option>

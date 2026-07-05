@@ -2,6 +2,8 @@
 
 AI-powered apartment search application built with **React**, **Node.js**, and **Google Gemini**.
 
+![Application Screenshot](assets/app.png)
+
 ---
 
 # Project Overview

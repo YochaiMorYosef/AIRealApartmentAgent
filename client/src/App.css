@@ -209,6 +209,25 @@ body {
   overflow-y: auto;
 }
 
+.dashboard-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.dashboard-header h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.dashboard-count {
+  font-size: 13px;
+  color: #9ca3af;
+}
+
 .filters {
   display: flex;
   gap: 12px;
