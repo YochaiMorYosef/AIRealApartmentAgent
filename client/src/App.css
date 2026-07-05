@@ -12,7 +12,8 @@ body {
 .app {
   display: flex;
   direction: rtl;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .chat-panel {

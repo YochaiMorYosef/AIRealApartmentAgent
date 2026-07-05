@@ -27,7 +27,7 @@ function ChatPanel({ messages, input, sending, onInputChange, onSend }) {
   const textareaRef = useRef(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [messages, sending]);
 
   useEffect(() => {
